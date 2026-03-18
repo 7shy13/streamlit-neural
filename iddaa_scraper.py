@@ -121,24 +121,25 @@ def scrape_iddaa_live():
         print(f"[Scraper] API Scrape Error: {ex}")
         return DEMO_MATCHES
 
-if __name__ == '__main__':
-    res = scrape_iddaa_live()
-    for m in res[:5]:
-        print(f"ID: {m['match_id']} | {m['home']} vs {m['away']} | 1:{m['iddaa_1']} X:{m['iddaa_X']} 2:{m['iddaa_2']}")
-
-
-# ─── Entry point for standalone test ─────────────────────────────────────────
-if __name__ == '__main__':
-    print("=" * 60)
-    print("ANTIGRAVITY Iddaa Live Scraper Test")
-    print("=" * 60)
+def scrape_iddaa_batch_injuries(match_ids, max_workers=10):
+    """
+    Fetches injuries for multiple matches in parallel.
+    Significantly faster for the initial bulletin load.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    print(f"[Scraper] Parallel fetching injuries for {len(match_ids)} matches...")
     
-    matches = scrape_iddaa_live()
-    print(f"\nTotal matches: {len(matches)}")
-    print(f"Source: {matches[0].get('source','?') if matches else 'N/A'}")
-    print("-" * 60)
-    for m in matches[:10]:
-        src = m.get('source', '?')
-        t   = m.get('match_time', '')
-        print(f"[{src}] {t:5s} | {m['home']:<25} vs {m['away']:<25} | "
-              f"1:{m['iddaa_1']:.2f}  X:{m['iddaa_X']:.2f}  2:{m['iddaa_2']:.2f}  | {m['league']}")
+    results = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_id = {executor.submit(scrape_detailed_injuries, mid): mid for mid in match_ids}
+        for future in future_to_id:
+            mid = future_to_id[future]
+            try:
+                results[mid] = future.result()
+            except Exception as e:
+                print(f"[Scraper] Error in parallel fetch for {mid}: {e}")
+                results[mid] = [[], []]
+    return results
+
+if __name__ == '__main__':
+    # ... standalone test logic ...

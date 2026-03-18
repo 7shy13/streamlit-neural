@@ -16,12 +16,31 @@ from base_elo_engine import DynamicEloEngine
 from build_mock_db import get_base_mv
 from pricing_engine import calculate_1x2_probs
 from live_predictor import warm_up_elo_engine
-from iddaa_scraper import scrape_iddaa_live, scrape_detailed_injuries
+from iddaa_scraper import scrape_iddaa_live, scrape_detailed_injuries, scrape_iddaa_batch_injuries
 from backtest_engine import BacktestEngine
 from goal_results_scraper import get_results_for_date
 from coupon_engine import build_system_coupon
 from naming_utils import get_canonical_name
 from git_sync import sync_to_github # Req: Automated Sync
+
+# ─── Data & Analysis Pipeline (TTL: 15min) ──────────────────────────────────
+@st.cache_data(ttl=900, show_spinner=False)
+def get_full_analysis(_elo_engine):
+    """
+    Automated pipeline: Scrape Matches -> Parallel Injuries -> Neural Analysis.
+    Persists for 900s (15 min) to prevent redundant network calls.
+    """
+    matches = scrape_iddaa_live()
+    if not matches:
+        return [], {}, []
+
+    # Parallel injury fetch (Req: Performance)
+    mids = [m['match_id'] for m in matches if m.get('match_id')]
+    injury_map = scrape_iddaa_batch_injuries(mids, max_workers=15)
+    
+    # Calculate results
+    results = calculate_value_bets(matches, injury_map, _elo_engine)
+    return results, injury_map, matches
 
 # ─── Page Config ─────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -587,6 +606,20 @@ def main():
         elo_engine, backtest_engine = get_engines()
         status.update(label="✅ Neural Engine Ready", state="complete")
 
+    # AUTO-SYNC / PERSISTENCE LOGIC (Request: Hands-off updates)
+    if st.session_state.analyzed_results is None:
+        try:
+            # This call is cached via @st.cache_data(ttl=900)
+            # It will only hit the network once every 15 minutes.
+            results, injuries, matches = get_full_analysis(elo_engine)
+            if results:
+                st.session_state.scraped_data = {"matches": matches, "injuries": injuries}
+                st.session_state.analyzed_results = results
+                st.session_state.last_sync = datetime.datetime.now().strftime("%H:%M:%S")
+                st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
+        except Exception as e:
+             st.sidebar.error(f"Auto-sync failed: {e}")
+
     # 0. SIDEBAR - Maintenance & Sync
     with st.sidebar:
         st.markdown('<div style="text-align:center; padding:1.5rem 0;"><h2 style="color:var(--accent); margin-bottom:0.5rem;">⚙️ SYSTEM</h2></div>', unsafe_allow_html=True)
@@ -671,62 +704,18 @@ def main():
         st.write("")  # spacing
         btn_c1, btn_c2 = st.columns([1, 1])
         with btn_c1:
-            if st.button("📡 FETCH BULLETIN", use_container_width=True):
-                n_steps = 0
-                # Estimate: 2s per match scrape (injury endpoint)
-                start = time.time()
-                progress_bar = st.progress(0)
-                status_box = st.empty()
-                status_box.markdown("⏱ **Estimated:** calculating...")
-                with st.spinner("Scanning MBS1 database..."):
-                    matches = scrape_iddaa_live()
-                    n = len(matches)
-                    injury_map = {}
-                    for i, m in enumerate(matches):
-                        mid = m.get('match_id')
-                        if mid: injury_map[mid] = scrape_detailed_injuries(mid)
-                        elapsed = time.time() - start
-                        eta = (elapsed / (i+1)) * (n - i - 1) if i > 0 else n * 1.5
-                        progress_bar.progress(int((i+1)/n*100))
-                        status_box.markdown(f"⏱ **Elapsed:** {int(elapsed)}s &nbsp;|&nbsp; **ETA:** ~{int(eta)}s")
-                    st.session_state.scraped_data = {"matches": matches, "injuries": injury_map}
-                    st.session_state.last_sync = datetime.datetime.now().strftime("%H:%M:%S")
-                    
-                    # IMMEDIATE PREVIEW: Rapid enrichment
-                    db_teams = list(elo_engine.ratings.keys())
-                    preview_results = []
-                    for m in matches:
-                        h = get_canonical_name(str(m['home']), db_teams)
-                        a = get_canonical_name(str(m['away']), db_teams)
-                        h_mv = float(get_base_mv(h) or 25.0)
-                        a_mv = float(get_base_mv(a) or 25.0)
-                        h_elo = elo_engine.ratings.get(h, 1500)
-                        a_elo = elo_engine.ratings.get(a, 1500)
-                        preview_results.append({
-                            **m, "home": h, "away": a, "home_elo": h_elo, "away_elo": a_elo,
-                            "home_mv": h_mv, "away_mv": a_mv, "has_value": False, "value_bets": []
-                        })
-                    st.session_state.analyzed_results = preview_results
-                progress_bar.empty()
-                status_box.empty()
+            if st.button("📡 FORCE REFRESH", use_container_width=True, help="Clear cache and fetch latest matches"):
+                st.cache_data.clear()
                 st.rerun()
         with btn_c2:
-            if st.button("⚡ RUN NEURAL ENGINE", use_container_width=True):
-                if not st.session_state.scraped_data:
-                    st.error("Fetch bulletin first!")
-                else:
-                    start = time.time()
-                    total = len(st.session_state.scraped_data['matches'])
-                    progress_bar = st.progress(0)
-                    status_box = st.empty()
-                    status_box.markdown(f"⏱ **Estimated:** ~{int(total * 0.3)}s for {total} matches")
-                    with st.spinner("Poisson Dixon-Coles λ Processing..."):
+            if st.button("⚡ RE-ANALYZE", use_container_width=True, help="Re-run neural simulations on current data"):
+                with st.spinner("Poisson Dixon-Coles λ Processing..."):
+                    if st.session_state.scraped_data:
                         results = calculate_value_bets(
                             st.session_state.scraped_data['matches'],
                             st.session_state.scraped_data['injuries'],
                             elo_engine
                         )
-                        progress_bar.progress(80)
                         st.session_state.analyzed_results = results
                         st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
                         
@@ -739,14 +728,10 @@ def main():
                                             "home": res['home'], "away": res['away'], "outcome": vb['outcome'],
                                             "odd": vb['iddaa_odd'], "ev": vb['ev'], "match_time": res['match_time'], "league": res['league']
                                         })
-                        elapsed = round(time.time() - start, 1)
-                        progress_bar.progress(100)
-                        status_box.markdown(f"✅ **Done in {elapsed}s** — {len(results)} matches analyzed")
-                    time.sleep(1.5)
-                    progress_bar.empty()
-                    status_box.empty()
-                    st.balloons()
-                    st.rerun()
+                        st.success("Neural Analysis Complete!")
+                        st.balloons()
+                    else:
+                        st.error("No data to analyze. Use Force Refresh first.")
 
     st.markdown(f'<p style="font-size:0.7rem; color:#94a3b8; margin-top:-0.5rem; margin-bottom:1.5rem;">Last Engine Sync: {st.session_state.last_sync}</p>', unsafe_allow_html=True)
 
