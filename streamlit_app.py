@@ -601,8 +601,31 @@ def main():
                     st.balloons()
                 else:
                     st.error(f"❌ {msg}")
-                    if "executable not found" in msg.lower():
+                    if "no configured push destination" in msg.lower():
+                        st.warning("⚠️ No remote repository set. Please use the 'Set Remote' tool below.")
+                    elif "executable not found" in msg.lower():
                         st.info("💡 Tip: Install 'Git for Windows' from [git-scm.com](https://git-scm.com/) to enable this feature.")
+        
+        # Req: Remote Configuration UI
+        with st.expander("🛠 Git Remote Config"):
+            new_remote = st.text_input("GitHub URL", placeholder="https://github.com/user/repo.git")
+            if st.button("Set Remote (Origin)", use_container_width=True):
+                if new_remote:
+                    import subprocess
+                    from git_sync import find_git_executable
+                    git_exe = find_git_executable()
+                    if git_exe:
+                        try:
+                            # Try to remove old origin first if exists
+                            subprocess.run([git_exe, "remote", "remove", "origin"], capture_output=True)
+                            subprocess.run([git_exe, "remote", "add", "origin", new_remote], check=True)
+                            st.success("✅ Remote 'origin' successfully set!")
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
+                    else:
+                        st.error("Git not found.")
+                else:
+                    st.error("Please enter a valid URL.")
         
         st.markdown("---")
         st.markdown("### 📊 Performance Parameters")
