@@ -142,4 +142,5 @@ def scrape_iddaa_batch_injuries(match_ids, max_workers=10):
     return results
 
 if __name__ == '__main__':
-    # ... standalone test logic ...
+    res = scrape_iddaa_live()
+    print(f"Scraped {len(res)} matches.")
