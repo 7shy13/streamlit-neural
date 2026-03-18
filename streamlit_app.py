@@ -618,7 +618,7 @@ def main():
                 st.session_state.last_sync = datetime.datetime.now().strftime("%H:%M:%S")
                 st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
         except Exception as e:
-             st.sidebar.error(f"Auto-sync failed: {e}")
+            st.sidebar.error(f"Auto-sync failed: {e}")
 
     # 0. SIDEBAR - Maintenance & Sync
     with st.sidebar:
