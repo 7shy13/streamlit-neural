@@ -1,0 +1,9 @@
+streamlit
+pandas
+numpy
+scipy
+beautifulsoup4
+requests
+plotly
+lxml
+flask-cors  # Keep for existing server if needed

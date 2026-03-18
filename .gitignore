@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+streamlit.log
+
+# Streamlit
+.streamlit/
+
+# Project Specific
+# We keep T1_ALL.csv as it's the core data
+# We keep placed_bets.json and stats.json as requested
+src/Phase2_Pricing_Output.csv
+src/final_api_check.json
+goal_debug.html
+goal_json.txt
+pricing_sandbox.html

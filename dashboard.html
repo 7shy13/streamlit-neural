@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ANTIGRAVITY | Premium Value Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #05080e;
+      --bg-surface: #0a0f1a;
+      --surface: rgba(255,255,255,0.03);
+      --surface-bright: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.08);
+      --border-bright: rgba(255,255,255,0.15);
+      --accent: #0ea5e9;
+      --accent-glow: rgba(14,165,233,0.3);
+      --purple: #8b5cf6;
+      --purple-glow: rgba(139,92,246,0.3);
+      --green: #10b981;
+      --green-glow: rgba(16,185,129,0.25);
+      --red: #f43f5e;
+      --yellow: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --glass: backdrop-filter: blur(14px) saturate(180%);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* ── DYNAMIC MESH BACKGROUND ── */
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: 
+        radial-gradient(circle at 0% 0%, rgba(14,165,233,0.08) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(139,92,246,0.08) 0%, transparent 40%);
+      z-index: -1;
+    }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%;
+      height: 80px;
+      background: rgba(5,8,14,0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-size: 1.5rem; font-weight: 800;
+      background: linear-gradient(to right, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -1px;
+    }
+    .nav-stats { display: flex; gap: 2rem; }
+    .nav-stat-item { text-align: right; }
+    .nav-stat-label { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .nav-stat-value { font-size: 1rem; font-weight: 700; color: var(--text); }
+
+    /* ── HEADER SECTION ── */
+    header {
+      padding: 4rem 5% 2rem;
+      max-width: 1400px; margin: 0 auto;
+      text-align: center;
+    }
+    header h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900; letter-spacing: -3px;
+      margin-bottom: 1.5rem; line-height: 1;
+    }
+    header h1 span { color: var(--accent); position: relative; }
+    header p {
+      font-size: 1.15rem; color: var(--text-muted); max-width: 650px; margin: 0 auto 3rem;
+      font-weight: 300;
+    }
+
+    /* ── ACTION BAR ── */
+    .controls {
+      display: flex; gap: 1rem; justify-content: center; margin-bottom: 4rem;
+    }
+    .button {
+      padding: 1rem 2.5rem; border-radius: 14px;
+      font-family: inherit; font-size: 1rem; font-weight: 700;
+      border: 1px solid transparent; cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; align-items: center; gap: 0.75rem;
+      position: relative; overflow: hidden;
+    }
+    .button-primary {
+      background: var(--accent); color: white;
+      box-shadow: 0 10px 30px var(--accent-glow);
+    }
+    .button-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 40px var(--accent-glow); }
+    .button-secondary {
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    }
+    .button-secondary:hover { background: var(--surface-bright); border-color: var(--border-bright); }
+    .button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    /* ── MAIN CONTENT ── */
+    main { max-width: 1400px; margin: 0 auto; padding: 0 5% 5rem; }
+
+    .grid-header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+    }
+    .grid-title { font-size: 1.5rem; font-weight: 700; }
+    .filter-group { display: flex; gap: 0.5rem; }
+    .filter-chip {
+      padding: 0.5rem 1.25rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+      cursor: pointer; transition: 0.2s;
+    }
+    .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* ── MATCH CARDS ── */
+    .matches-grid {
+      display: grid;
+      gap: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    /* View Modes */
+    .matches-grid.view-cards { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
+    .matches-grid.view-compact { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+    .matches-grid.view-list { grid-template-columns: 1fr; gap: 0.75rem; }
+
+    .match-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 1.75rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative; overflow: hidden;
+      animation: reveal 0.6s ease both;
+    }
+    @keyframes reveal { from { opacity: 0; transform: translateY(30px); } }
+
+    .match-card:hover {
+      border-color: var(--border-bright);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      background: #0d1421;
+    }
+    .match-card.is-value {
+      background: linear-gradient(145deg, #0a0f1a 0%, #0d1814 100%);
+      border-color: rgba(16,185,129,0.3);
+    }
+    .match-card.is-value::after {
+      content: 'VALUE DETECTED';
+      position: absolute; top: 1.25rem; right: -2.5rem;
+      background: var(--green); color: black;
+      font-size: 0.65rem; font-weight: 900;
+      padding: 0.25rem 3rem; transform: rotate(45deg);
+      box-shadow: 0 4px 10px var(--green-glow);
+    }
+
+    /* Card Layout */
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+    .league-info { display: flex; flex-direction: column; gap: 0.25rem; }
+    .league-name { font-size: 0.75rem; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+    .match-date { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+
+    .teams-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; position: relative; }
+    .team { flex: 1; text-align: center; }
+    .team-name { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .team-elo { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-top: 4px; }
+    .elo-src { 
+      font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; 
+      text-transform: uppercase; font-weight: 800; margin-top: 4px; display: inline-block;
+    }
+    .src-anchor { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+    .src-dynamic { background: rgba(14,165,233,0.15); color: var(--accent); border: 1px solid rgba(14,165,233,0.3); }
+    .src-fallback { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
+    
+    .vs-circle { 
+      width: 40px; height: 40px; border-radius: 50%; 
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 900; color: var(--text-muted);
+      margin: 0 1rem;
+    }
+
+    /* Stats Section */
+    .match-stats { 
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; 
+      padding: 1.25rem; background: rgba(255,255,255,0.02);
+      border-radius: 16px; margin-bottom: 1.5rem;
+    }
+    .stat-item { display: flex; flex-direction: column; gap: 4px; }
+    .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .stat-value { font-size: 0.9rem; font-weight: 700; }
+    .stat-value span { color: var(--text-muted); font-size: 0.8rem; font-weight: 400; }
+
+    /* Odds Section */
+    .odds-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem; display: block; border-left: 3px solid var(--accent); padding-left: 0.5rem; }
+    .odds-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .odd-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1rem; text-align: center;
+      transition: 0.2s;
+    }
+    .odd-box.active {
+      background: rgba(16,185,129,0.1); border-color: var(--green);
+      box-shadow: 0 10px 20px var(--green-glow);
+    }
+    .odd-name { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem; }
+    .odd-val { font-size: 1.35rem; font-weight: 800; display: block; }
+    .odd-ev { 
+      font-size: 0.75rem; font-weight: 800; margin-top: 0.4rem; 
+      color: var(--green); display: inline-block;
+    }
+    .box-footer { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── COMPACT VIEW OVERRIDES ── */
+    .view-compact .match-card { padding: 1.25rem; border-radius: 18px; }
+    .view-compact .team-name { font-size: 1rem; }
+    .view-compact .match-stats { padding: 0.75rem; margin-bottom: 1rem; }
+    .view-compact .odd-val { font-size: 1.1rem; }
+    .view-compact .match-card.is-value::after { top: 0.8rem; right: -3rem; padding: 0.2rem 3rem; font-size: 0.55rem; }
+
+    /* ── LIST VIEW OVERRIDES ── */
+    .view-list .match-card { 
+      display: grid; 
+      grid-template-columns: 120px 1.5fr 1fr 2fr 180px; 
+      align-items: center; 
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      gap: 1.5rem;
+    }
+    .view-list .card-top { margin-bottom: 0; }
+    .view-list .teams-container { margin-bottom: 0; }
+    .view-list .vs-circle { margin: 0 0.5rem; width: 30px; height: 30px; }
+    .view-list .match-stats { margin-bottom: 0; padding: 0.5rem; background: none; display: flex; flex-direction: column; }
+    .view-list .stat-item { flex-direction: row; gap: 10px; align-items: center; }
+    .view-list .stat-label { display: none; }
+    .view-list .odds-title { display: none; }
+    .view-list .odds-row { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .view-list .odd-box { padding: 0.4rem; border-radius: 8px; }
+    .view-list .odd-val { font-size: 1rem; }
+    .view-list .odd-ev { display: none; }
+    .view-list .box-footer { display: none; }
+    .view-list .card-footer { display: none; }
+    .view-list .match-card.is-value::after { display: none; }
+    .view-list .match-card.is-value { border-left: 4px solid var(--green); }
+    .view-list .team-elo { display: none; }
+
+    @media (max-width: 1000px) {
+      .view-list .match-card { grid-template-columns: 1fr; }
+    }
+
+    /* Loading Spinner */
+    .loader {
+      width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty State */
+    .empty-state {
+      grid-column: 1 / -1; text-align: center; padding: 10rem 0;
+      color: var(--text-muted);
+    }
+    .empty-state i { font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.2; display: block; }
+
+      @media (max-width: 768px) {
+        .matches-grid { grid-template-columns: 1fr; }
+        nav .nav-stats { display: none; }
+      }
+
+      /* AI Coupon Lab Styles */
+      .coupon-lab {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+        border-top: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 24px;
+      }
+      .coupon-card {
+        background: linear-gradient(145deg, #1e1e1e, #141414);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border-radius: 20px;
+        padding: 2rem;
+        max-width: 900px;
+        margin: 1.5rem auto;
+        position: relative;
+        overflow: hidden;
+      }
+      .coupon-item {
+        margin-bottom: 2rem;
+      }
+      .coupon-card::before {
+        content: 'AI SUGGESTION';
+        position: absolute;
+        top: 15px;
+        right: -35px;
+        background: #ffd700;
+        color: #000;
+        font-size: 0.6rem;
+        font-weight: 800;
+        padding: 5px 40px;
+        transform: rotate(45deg);
+      }
+      .coupon-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 1rem;
+      }
+      .coupon-type {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #ffd700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .coupon-legs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .leg-item {
+        background: rgba(255,255,255,0.03);
+        padding: 1rem;
+        border-radius: 12px;
+        border-left: 3px solid #ffd700;
+      }
+      .leg-teams { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+      .leg-pick { color: #ffd700; font-weight: 700; }
+      
+      .coupon-footer {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        text-align: center;
+        background: rgba(255,255,255,0.05);
+        padding: 1.5rem;
+        border-radius: 16px;
+      }
+      .footer-stat label { display: block; font-size: 0.7rem; opacity: 0.6; margin-bottom: 3px; }
+      .footer-stat span { font-size: 1.2rem; font-weight: 800; }
+
+      /* Bet Tracking Window Styles */
+      .history-section { margin-top: 4rem; }
+      .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #0d1117;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .history-table th { background: #161b22; padding: 1.25rem; text-align: left; font-size: 0.8rem; opacity: 0.7; border-bottom: 1px solid var(--border); }
+      .history-table td { padding: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+      .status-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .status-pending { background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+      .status-settled { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+      .pnl-pos { color: #10b981; font-weight: 800; }
+      .pnl-neg { color: #ef4444; font-weight: 800; }
+    </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">ANTIGRAVITY</div>
+  <div class="nav-stats">
+    <div class="nav-stat-item">
+      <div class="nav-stat-label">System Active</div>
+      <div class="nav-stat-value" id="navMatches">0 Matches</div>
+    </div>
+    <div class="nav-stat-item">
+      <div class="nav-stat-label">Value Bets</div>
+      <div class="nav-stat-value" id="navValues" style="color:var(--green)">0 Signals</div>
+    </div>
+    <div class="nav-stat-item">
+      <div class="nav-stat-label">Last Sync</div>
+      <div class="nav-stat-value" id="navSync" style="color:var(--accent)">--:--:--</div>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <h1>The <span>Ultimate</span> Betting Edge</h1>
+  <p>Quantitative analysis driven by Dixon-Coles Poisson modeling. We don't guess—we calculate the exact mathematical discrepancies in the market.</p>
+  
+  <!-- Backtest Performance Banner -->
+  <div id="statsBanner" style="margin: -1rem auto 3rem; max-width: 900px; padding: 1.5rem; background: rgba(16,185,129,0.05); border: 1px solid var(--border); border-radius: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+    <div class="nav-stat-item">
+      <div class="nav-stat-label">Realized ROI</div>
+      <div class="nav-stat-value" id="statROI" style="font-size: 1.5rem; color: var(--green)">0%</div>
+    </div>
+    <div class="nav-stat-item">
+      <div class="nav-stat-label">Net Profit</div>
+      <div class="nav-stat-value" id="statProfit" style="font-size: 1.5rem">0u</div>
+    </div>
+    <div class="nav-stat-item">
+      <div class="nav-stat-label">Hit Rate</div>
+      <div class="nav-stat-value" id="statHit" style="font-size: 1.5rem">0%</div>
+    </div>
+    <div class="nav-stat-item">
+      <div class="nav-stat-label">Settled Bets</div>
+      <div class="nav-stat-value" id="statTotal" style="font-size: 1.5rem">0</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="button button-primary" id="btnScrape">
+      <div class="loader" id="scrapeLoader"></div>
+      <span>📡 Fetch Bulletin</span>
+    </button>
+    <button class="button button-secondary" id="btnAnalyze" disabled>
+      <div class="loader" id="analyzeLoader"></div>
+      <span>⚡ Run Neural Engine</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div style="background: rgba(14,165,233,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 1rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; font-size: 0.85rem;">
+    <span style="font-size: 1.2rem;">ℹ️</span>
+    <p style="color: var(--text-muted);">
+      <strong style="color: var(--text);">Scale Disclosure:</strong> This model uses the <strong>ClubElo Standard Scale (1200-2100)</strong>. 
+      If you are comparing with <em>Soccer-Rating.com</em> (2500+ scale), our values will appear lower but represent the same relative strength.
+    </p>
+  </div>
+
+  <div class="grid-header">
+    <div class="grid-title" id="gridTitle">Live Market Analysis</div>
+    <div class="filter-group">
+      <div style="margin-right: 1.5rem; display: flex; gap: 0.25rem; background: var(--surface); padding: 0.25rem; border-radius: 12px; border: 1px solid var(--border);">
+        <button class="filter-chip active" style="padding: 0.4rem 0.8rem;" onclick="setView('cards', this)">🎴 Cards</button>
+        <button class="filter-chip" style="padding: 0.4rem 0.8rem;" onclick="setView('compact', this)">📱 Compact</button>
+        <button class="filter-chip" style="padding: 0.4rem 0.8rem;" onclick="setView('list', this)">📜 List</button>
+      </div>
+      <button class="filter-chip active" onclick="applyFilter(this, 'all')">All Matches</button>
+      <button class="filter-chip" onclick="applyFilter(this, 'value')">Value Only</button>
+    </div>
+  </div>
+
+  <div class="matches-grid view-cards" id="matchGrid">
+    <div class="empty-state">
+      <i>📊</i>
+      <p>Initiate a scrape to begin real-time value detection.</p>
+    </div>
+  </div>
+
+  <!-- AI Coupon Lab -->
+  <div class="coupon-lab" id="couponLab" style="margin-top: 4rem;">
+    <div class="grid-title" style="color:#ffd700; margin-bottom: 2rem;">🏆 AI Optimized System Coupon</div>
+    <div id="couponContainer">
+       <div class="empty-state" style="padding: 2rem; border: 1px dashed var(--border); border-radius: 20px;">
+         <p style="opacity:0.5">Neural combinations will appear here after engine execution.</p>
+       </div>
+    </div>
+  </div>
+
+  <!-- History / Tracking -->
+  <div class="history-section" id="historyTable" style="margin-top: 5rem; padding-bottom: 5rem;">
+    <div class="grid-title" style="margin-bottom: 2rem;">🕒 Dynamic Bet Tracking & Performance</div>
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Match / League</th>
+          <th>Selection</th>
+          <th>Odd</th>
+          <th>EV</th>
+          <th>Outcome</th>
+          <th>Match Result</th>
+          <th>Net P&L (Units)</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody">
+        <tr><td colspan="7" style="text-align:center; opacity:0.5; padding: 3rem;">Initializing tracking data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const API = 'http://192.168.1.24:5050';
+window.onerror = function(msg, url, line, col, error) {
+  const errDetail = `Error: ${msg}\nLine: ${line}\nStack: ${error ? error.stack : 'N/A'}`;
+  console.error(errDetail);
+  alert("CRITICAL UI ERROR:\n" + errDetail);
+  return false;
+};
+let scrapedData = null;
+let allResults = [];
+
+function safeStr(val) {
+  if (val === undefined || val === null) return "";
+  return String(val);
+}
+
+function formatTime(unix) {
+  if (!unix || unix === 0) return "TBD";
+  const date = new Date(unix * 1000); // Unix in seconds
+  return date.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── DOM ──
+const btnScrape = document.getElementById('btnScrape');
+const btnAnalyze = document.getElementById('btnAnalyze');
+const scrapeLoader = document.getElementById('scrapeLoader');
+const analyzeLoader = document.getElementById('analyzeLoader');
+const matchGrid = document.getElementById('matchGrid');
+
+// ── New Functions for Stats & Sync ──
+async function updateStats() {
+  try {
+    const res = await fetch(`${API}/api/stats`);
+    const data = await res.json();
+    if (data.status === 'ok') {
+      const s = data.stats;
+      document.getElementById('navSync').textContent = data.last_sync || "--:--:--";
+      
+      if (s.total_bets > 0) {
+        document.getElementById('statsBanner').style.display = 'grid';
+        document.getElementById('statROI').textContent = `${s.roi}%`;
+        document.getElementById('statProfit').textContent = `${s.net_profit}u`;
+        document.getElementById('statHit').textContent = `${s.hit_rate}%`;
+        document.getElementById('statTotal').textContent = s.total_bets;
+        
+        // Color coding
+        document.getElementById('statROI').style.color = s.roi >= 0 ? 'var(--green)' : 'var(--red)';
+        document.getElementById('statProfit').style.color = s.net_profit >= 0 ? 'var(--green)' : 'var(--red)';
+      }
+      
+      // Also update history
+      const hRes = await fetch(`${API}/api/placed_bets`);
+      const hData = await hRes.json();
+      renderHistory(hData.bets);
+
+    }
+  } catch(e) { console.error("Stats fetch error:", e); }
+}
+
+function renderHistory(bets) {
+  console.log("[UI] renderHistory starting for", bets ? bets.length : 0, "bets");
+  const body = document.getElementById('historyBody');
+  if (!bets || !bets.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center; opacity:0.5;">No active bets found. Run analysis to identify signals.</td></tr>';
+    return;
+  }
+  
+  body.innerHTML = bets.map(b => `
+    <tr>
+      <td>
+        <div style="font-weight:700;">${b.home} - ${b.away}</div>
+        <div style="font-size:0.7rem; opacity:0.6;">${b.league}</div>
+      </td>
+      <td><span class="leg-pick">${b.outcome}</span></td>
+      <td style="font-weight:700;">${b.odd.toFixed(2)}</td>
+      <td style="color:${b.ev > 0 ? 'var(--green)' : 'var(--red)'}">${(b.ev*100).toFixed(1)}%</td>
+      <td><span class="status-badge ${b.status === 'PENDING' ? 'status-pending' : 'status-settled'}">${b.status}</span></td>
+      <td>${b.result || '-'}</td>
+      <td class="${b.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${b.status === 'SETTLED' ? (b.pnl > 0 ? '+' : '') + b.pnl.toFixed(2) : '-'}</td>
+    </tr>
+  `).join('');
+}
+
+// Initial fetch and set interval
+updateStats();
+setInterval(updateStats, 60000); // Every minute
+
+btnScrape.addEventListener('click', async () => {
+  btnScrape.disabled = true;
+  scrapeLoader.style.display = 'block';
+  matchGrid.innerHTML = `
+    <div class="empty-state"><i>🌀</i><p>Scanning Iddaa MBS1 database...</p></div>
+  `;
+
+  try {
+    const res = await fetch(`${API}/api/scrape`, { method: 'POST' });
+    scrapedData = await res.json();
+    renderInitialCards(scrapedData.matches);
+    document.getElementById('navMatches').textContent = `${scrapedData.match_count} Matches`;
+    btnAnalyze.disabled = false;
+  } catch(e) {
+    alert("API Error: " + e.message);
+  } finally {
+    btnScrape.disabled = false;
+    scrapeLoader.style.display = 'none';
+  }
+});
+
+btnAnalyze.addEventListener('click', async () => {
+  btnAnalyze.disabled = true;
+  analyzeLoader.style.display = 'block';
+  
+  try {
+    const res = await fetch(`${API}/api/analyze`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ matches: scrapedData.matches, injuries: scrapedData.injuries })
+    });
+    const data = await res.json();
+    allResults = data.results;
+    renderAnalyzedCards(allResults);
+    
+    if (data.system_coupon) {
+      renderCoupon(data.system_coupon);
+    } else {
+      document.getElementById('couponContainer').innerHTML = `
+        <div class="empty-state" style="padding: 2rem; border: 1px dashed var(--border); border-radius: 20px;">
+          <p style="opacity:0.5">No high-probability system combinations found for the current signals. Adjusting parameters...</p>
+        </div>
+      `;
+    }
+
+    document.getElementById('navValues').textContent = `${data.value_bets_found} Signals`;
+    document.getElementById('navMatches').textContent = `${data.total_matches} Matches`;
+  } catch(e) {
+    alert("Neural Analysis Failed: " + e.message);
+  } finally {
+    btnAnalyze.disabled = false;
+    analyzeLoader.style.display = 'none';
+  }
+});
+
+function setView(mode, btn) {
+  const grid = document.getElementById('matchGrid');
+  grid.classList.remove('view-cards', 'view-compact', 'view-list');
+  grid.classList.add(`view-${mode}`);
+  
+  // Update UI active state for view buttons
+  btn.parentElement.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function applyFilter(btn, type) {
+  // Update filter chips (excluding view chips)
+  btn.parentElement.querySelectorAll(':scope > .filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = type === 'value' ? allResults.filter(r => r.has_value) : allResults;
+  renderAnalyzedCards(filtered);
+}
+
+function getSrcClass(src) {
+  if (src === 'ANCHOR') return 'src-anchor';
+  if (src === 'DYNAMIC') return 'src-dynamic';
+  return 'src-fallback';
+}
+
+function renderCoupon(c) {
+  console.log("[UI] renderCoupon starting for", c ? c.type : 'None');
+  const lab = document.getElementById('couponLab');
+  const container = document.getElementById('couponContainer');
+  lab.style.display = 'block';
+  
+  container.innerHTML = `
+    <div class="coupon-card">
+      <div class="coupon-header">
+        <div class="coupon-type">${c.type}</div>
+        <div style="text-align:right">
+          <div style="font-size:0.7rem; opacity:0.6;">EXPECTED VALUE</div>
+          <div style="font-size:1.5rem; font-weight:800; color:var(--green)">+${(c.total_ev*100).toFixed(2)}%</div>
+        </div>
+      </div>
+      
+      <div class="coupon-legs">
+        ${c.legs.map(l => `
+          <div class="leg-item">
+            <div class="leg-teams">${l.home} vs ${l.away}</div>
+            <div class="leg-pick">${l.outcome} <span style="opacity:0.6; font-weight:400">@ ${l.iddaa_odd.toFixed(2)}</span></div>
+            <div style="font-size:0.7rem; margin-top:5px; opacity:0.8; color:var(--green)">Signal EV: +${(l.ev*100).toFixed(1)}%</div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div class="coupon-footer">
+        <div class="footer-stat">
+          <label>TOTAL COMBINATIONS</label>
+          <span>${c.num_combinations}</span>
+        </div>
+        <div class="footer-stat">
+          <label>AVG SYSTEM ODD</label>
+          <span>${c.avg_odd.toFixed(2)}</span>
+        </div>
+        <div class="footer-stat">
+          <label>SUGGESTED STAKE (15% KELLY)</label>
+          <span style="color:#ffd700">€${c.suggested_stake}</span>
+        </div>
+      </div>
+      
+      <div style="margin-top:1.5rem; text-align:center; font-size:0.75rem; opacity:0.5; font-style:italic;">
+        * This coupon is mathematically structured to reduce variance while maintaining professional value.
+      </div>
+    </div>
+  `;
+}
+
+function renderInitialCards(matches) {
+  if (!matches.length) return;
+  matchGrid.innerHTML = matches.map((m, i) => `
+    <div class="match-card" style="animation-delay: ${i*0.05}s">
+      <div class="card-top">
+        <div class="league-info">
+          <span class="league-name">${m.league}</span>
+          <span class="match-date">${formatTime(m.match_time)}</span>
+        </div>
+      </div>
+      <div class="teams-container">
+        <div class="team">
+          <span class="team-name">${m.home}</span>
+          ${m.home_elo ? `<span class="team-elo">ELO ${m.home_elo}</span>` : ''}
+          ${m.home_elo_src ? `<span class="elo-src ${getSrcClass(m.home_elo_src)}">${safeStr(m.home_elo_src).split('_').join(' ')}</span>` : ''}
+          ${m.home_mv ? `<span class="team-elo" style="font-size: 0.65rem; opacity: 0.7;">Budget: €${m.home_mv}m</span>` : ''}
+        </div>
+        <div class="vs-circle">VS</div>
+        <div class="team">
+          <span class="team-name">${m.away}</span>
+          ${m.away_elo ? `<span class="team-elo">ELO ${m.away_elo}</span>` : ''}
+          ${m.away_elo_src ? `<span class="elo-src ${getSrcClass(m.away_elo_src)}">${safeStr(m.away_elo_src).split('_').join(' ')}</span>` : ''}
+          ${m.away_mv ? `<span class="team-elo" style="font-size: 0.65rem; opacity: 0.7;">Budget: €${m.away_mv}m</span>` : ''}
+        </div>
+      </div>
+      <div class="odds-row">
+        <div class="odd-box"><span class="odd-name">MS 1</span><span class="odd-val">${m.iddaa_1.toFixed(2)}</span></div>
+        <div class="odd-box"><span class="odd-name">MS X</span><span class="odd-val">${m.iddaa_X.toFixed(2)}</span></div>
+        <div class="odd-box"><span class="odd-name">MS 2</span><span class="odd-val">${m.iddaa_2.toFixed(2)}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAnalyzedCards(results) {
+  matchGrid.innerHTML = results.map((r, i) => {
+    try {
+      const bestBet = r.value_bets ? r.value_bets.find(v => v.is_value) : null;
+      console.log(`[UI] Rendering card ${i}:`, r.home, "vs", r.away, "Src:", r.home_elo_src);
+      
+      return `
+      <div class="match-card ${r.has_value ? 'is-value' : ''}" style="animation-delay: ${i*0.05}s">
+        <!-- ... existing content ... -->
+        <div class="card-top">
+          <div class="league-info">
+            <span class="league-name">${r.league}</span>
+            <span class="match-date">${formatTime(r.match_time)}</span>
+          </div>
+        </div>
+        
+        <div class="teams-container">
+          <div class="team">
+            <span class="team-name">${r.home}</span>
+            <span class="team-elo">ELO ${r.home_elo}</span>
+            <span class="elo-src ${getSrcClass(r.home_elo_src)}">${safeStr(r.home_elo_src || 'UNKNOWN').split('_').join(' ')}</span>
+            <span class="team-elo" style="font-size: 0.65rem; opacity: 0.7;">Budget: €${r.home_mv}m</span>
+          </div>
+          <div class="vs-circle">VS</div>
+          <div class="team">
+            <span class="team-name">${r.away}</span>
+            <span class="team-elo">ELO ${r.away_elo}</span>
+            <span class="elo-src ${getSrcClass(r.away_elo_src)}">${safeStr(r.away_elo_src || 'UNKNOWN').split('_').join(' ')}</span>
+            <span class="team-elo" style="font-size: 0.65rem; opacity: 0.7;">Budget: €${r.away_mv}m</span>
+          </div>
+        </div>
+
+        <div class="match-stats">
+          <div class="stat-item">
+            <span class="stat-label">Expected Goals (λ)</span>
+            <div class="stat-value">${r.lambda_h} <span>vs</span> ${r.lambda_a}</div>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Squad Strength Decay</span>
+            <div class="stat-value" style="color:${r.home_decay_pct > 15 ? 'var(--red)' : 'var(--text)'}">-${r.home_decay_pct}% <span>/</span> -${r.away_decay_pct}%</div>
+          </div>
+        </div>
+
+        <span class="odds-title">Calculated Discrepancies</span>
+        <div class="odds-row">
+          ${(r.value_bets || []).map(v => `
+            <div class="odd-box ${v.is_value ? 'active' : ''}">
+              <span class="odd-name">${v.outcome}</span>
+              <span class="odd-val">${(v.iddaa_odd || 0).toFixed(2)}</span>
+              <div class="box-footer">Fair: ${v.fair_odd}</div>
+              ${v.ev > 0 ? `<span class="odd-ev">EV +${(v.ev*100).toFixed(1)}%</span>` : `<div class="box-footer" style="color:var(--red)">EV ${(v.ev*100).toFixed(1)}%</div>`}
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="card-footer">
+          <div class="footer-stat"><div class="dot dot-accent"></div> Poisson Probabilities Calculated</div>
+          <div class="footer-stat">MBS=1 Priority</div>
+        </div>
+      </div>`;
+    } catch(err) {
+      console.error("[UI] Individual card render failed:", err, r);
+      return `<div class="match-card" style="border-color:red">Error rendering ${r ? r.home : 'match'}</div>`;
+    }
+  }).join('');
+}
+</script>
+</body>
+</html>
