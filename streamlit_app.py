@@ -11,11 +11,24 @@ import textwrap
 from bs4 import BeautifulSoup
 import requests
 
-# Add src to path
-project_root = os.path.dirname(os.path.abspath(__file__))
-src_path = os.path.join(project_root, 'src')
-if src_path not in sys.path:
-    sys.path.insert(0, src_path)
+# ─── Robust Path Discovery (Fix for Streamlit Cloud) ─────────────────────────
+import os
+import sys
+
+# Find absolute paths
+CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
+SRC_DIR = os.path.join(CURRENT_DIR, 'src')
+
+# Add to path with highest priority
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
+# Fallback for Streamlit Cloud absolute mount
+CLOUD_SRC = "/mount/src/streamlit-neural/src"
+if os.path.exists(CLOUD_SRC) and CLOUD_SRC not in sys.path:
+    sys.path.insert(0, CLOUD_SRC)
 
 from base_elo_engine import DynamicEloEngine
 from build_mock_db import get_base_mv
