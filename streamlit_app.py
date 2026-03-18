@@ -605,28 +605,29 @@ def main():
     if 'view_mode' not in st.session_state: st.session_state.view_mode = "cards"
     if 'filter_mode' not in st.session_state: st.session_state.filter_mode = "value" # Req #2: Default to value only
 
-    # ─── Neural Engine Warm-up ───
-    with st.status("🧠 Initializing Neural Engine...", expanded=False) as status:
-        st.write("Loading 6,000+ historical outcomes...")
+    # ─── System Initialization & Auto-Sync (Unified Feedback) ───
+    with st.status("⚙️ System Initializing...", expanded=True) as status:
+        st.write("🧠 **Step 1:** Warming up Neural Engine (6,000+ historical outcomes)...")
         elo_engine, backtest_engine = get_engines()
-        status.update(label="✅ Neural Engine Ready", state="complete")
-
-    # AUTO-SYNC / PERSISTENCE LOGIC (Request: Hands-off updates)
-    if st.session_state.analyzed_results is None:
-        with st.status("📡 Fetching Live Market Data...", expanded=True) as status:
+        
+        # Check if we need to pull fresh data
+        if st.session_state.analyzed_results is None:
             try:
-                st.write("Checking MBS1 Bulletin...")
+                st.write("📡 **Step 2:** Fetching Live MBS1 Bulletin...")
                 results, injuries, matches = get_full_analysis(elo_engine)
                 if results:
-                    st.write("🧠 Neural Signatures Processed.")
+                    st.write("⚡ **Step 3:** Processing Neural Projections & Signals...")
                     st.session_state.scraped_data = {"matches": matches, "injuries": injuries}
                     st.session_state.analyzed_results = results
                     st.session_state.last_sync = get_turkey_time()
                     st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
-                    status.update(label=f"✅ Sync Complete ({st.session_state.last_sync})", state="complete")
+                    status.update(label=f"✅ System Ready (Sync: {st.session_state.last_sync})", state="complete")
             except Exception as e:
-                 status.update(label="❌ Sync Failed", state="error")
+                 st.write(f"❌ **Error:** {e}")
+                 status.update(label="⚠️ Sync Partial Failure", state="error")
                  st.sidebar.error(f"Auto-sync failed: {e}")
+        else:
+            status.update(label=f"✅ System Ready (Cached: {st.session_state.last_sync})", state="complete")
 
     # 0. SIDEBAR - Maintenance & Sync
     with st.sidebar:
