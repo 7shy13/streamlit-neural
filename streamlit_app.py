@@ -603,10 +603,16 @@ def main():
     if 'bankroll' not in st.session_state: st.session_state.bankroll = 10000.0
     if 'ev_threshold' not in st.session_state: st.session_state.ev_threshold = 0.10
     if 'view_mode' not in st.session_state: st.session_state.view_mode = "cards"
-    if 'filter_mode' not in st.session_state: st.session_state.filter_mode = "value" # Req #2: Default to value only
+    if 'filter_mode' not in st.session_state: st.session_state.filter_mode = "value"
+    if 'is_deep_sync' not in st.session_state: st.session_state.is_deep_sync = False
 
     # ─── System Initialization & Auto-Sync (Unified Feedback) ───
-    with st.status("⚙️ System Initializing...", expanded=True) as status:
+    init_label = "⚙️ Deep System Reset In Progress..." if st.session_state.is_deep_sync else "⚙️ System Initializing..."
+    with st.status(init_label, expanded=True) as status:
+        if st.session_state.is_deep_sync:
+            st.write("🗑️ **Reset:** Clearing all physical caches and re-warming Neural Engine...")
+            st.session_state.is_deep_sync = False # Reset flag
+            
         st.write("🧠 **Step 1:** Warming up Neural Engine (6,000+ historical outcomes)...")
         elo_engine, backtest_engine = get_engines()
         
@@ -713,8 +719,12 @@ def main():
         st.write("")  # spacing
         btn_c1, btn_c2 = st.columns([1, 1])
         with btn_c1:
-            if st.button("📡 FORCE REFRESH", use_container_width=True, help="Clear cache and fetch latest matches"):
+            if st.button("📡 FORCE REFRESH", use_container_width=True, help="Deep Sync: Clear all caches and engines"):
                 st.cache_data.clear()
+                st.cache_resource.clear()
+                st.session_state.analyzed_results = None
+                st.session_state.scraped_data = None
+                st.session_state.is_deep_sync = True # Indicator for status block
                 st.rerun()
         with btn_c2:
             if st.button("⚡ RE-ANALYZE", use_container_width=True, help="Re-run neural simulations on current data"):
