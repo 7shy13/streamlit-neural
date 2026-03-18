@@ -571,8 +571,6 @@ def main():
         </script>
     """, unsafe_allow_html=True)
 
-    elo_engine, backtest_engine = get_engines()
-    
     # SESSION STATE INITIALIZATION (Must be first)
     if 'scraped_data' not in st.session_state: st.session_state.scraped_data = None
     if 'analyzed_results' not in st.session_state: st.session_state.analyzed_results = None
@@ -582,6 +580,12 @@ def main():
     if 'ev_threshold' not in st.session_state: st.session_state.ev_threshold = 0.10
     if 'view_mode' not in st.session_state: st.session_state.view_mode = "cards"
     if 'filter_mode' not in st.session_state: st.session_state.filter_mode = "value" # Req #2: Default to value only
+
+    # ─── Neural Engine Warm-up ───
+    with st.status("🧠 Initializing Neural Engine...", expanded=False) as status:
+        st.write("Loading 6,000+ historical outcomes...")
+        elo_engine, backtest_engine = get_engines()
+        status.update(label="✅ Neural Engine Ready", state="complete")
 
     # 0. SIDEBAR - Maintenance & Sync
     with st.sidebar:

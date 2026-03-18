@@ -178,14 +178,19 @@ class FluidMatcher:
         words = sorted(list(set(simplified.split())))
         return " ".join(words)
 
+    _MATCH_CACHE = {} # Global cache for cross-instance performance
+
     @staticmethod
     def match(scraped_name, candidate_list, cutoff=0.85):
         """
-        Multi-stage matching:
-        1. Exact simplified match
-        2. Sorted word match (Paris Saint German == Paris German Saint)
-        3. High-precision fuzzy match
+        Multi-stage matching with caching.
         """
+        if not scraped_name: return None
+        
+        # Cache key based on input and candidate list length/hash (simple proxy)
+        cache_key = (scraped_name, len(candidate_list))
+        if cache_key in FluidMatcher._MATCH_CACHE:
+            return FluidMatcher._MATCH_CACHE[cache_key]
         scrap_simple = FluidMatcher.simplify(scraped_name)
         scrap_sorted = FluidMatcher.get_sort_key(scraped_name)
         
@@ -193,19 +198,23 @@ class FluidMatcher:
         for cand in candidate_list:
             cand_simple = FluidMatcher.simplify(cand)
             if scrap_simple == cand_simple:
+                FluidMatcher._MATCH_CACHE[cache_key] = cand
                 return cand
             
             cand_sorted = FluidMatcher.get_sort_key(cand)
             if scrap_sorted == cand_sorted:
+                FluidMatcher._MATCH_CACHE[cache_key] = cand
                 return cand
         
         # Phase 3: Fuzzy fallback
-        # We compare simplified versions for the fuzzy match to reduce noise
         cand_map = {FluidMatcher.simplify(c): c for c in candidate_list}
         matches = difflib.get_close_matches(scrap_simple, list(cand_map.keys()), n=1, cutoff=cutoff)
         if matches:
-            return cand_map[matches[0]]
+            res = cand_map[matches[0]]
+            FluidMatcher._MATCH_CACHE[cache_key] = res
+            return res
             
+        FluidMatcher._MATCH_CACHE[cache_key] = None
         return None
 
 def get_canonical_name(scraped_name, database_names=[]):
