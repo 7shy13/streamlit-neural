@@ -162,9 +162,9 @@
     "ev": 0.1373,
     "match_time": 1773855900,
     "league": "IDDAA",
-    "status": "PENDING",
-    "result": null,
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "result": "7-2",
+    "pnl": -1.0,
     "timestamp": "2026-03-18T14:35:13.241823"
   },
   {

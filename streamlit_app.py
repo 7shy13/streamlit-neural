@@ -356,6 +356,39 @@ def format_time(unix):
     dt = datetime.utcfromtimestamp(unix) + timedelta(hours=3)
     return dt.strftime("%d/%m %H:%M")
 
+def settle_all_pending_bets(backtest_engine):
+    """
+    Identifies unique dates of pending bets and fetches results to settle them.
+    Ensures 'Past Bets' dashboard is always up-to-date.
+    """
+    from datetime import datetime, timedelta
+    pending_bets = [b for b in backtest_engine.bets if b.get('status') == 'PENDING']
+    if not pending_bets:
+        return
+    
+    # Get unique dates (YYYY-MM-DD) for all pending bets
+    # Also include Today and Yesterday to be safe
+    dates_to_check = set()
+    for bet in pending_bets:
+        # match_time is unix
+        m_date = datetime.utcfromtimestamp(bet['match_time']).strftime("%Y-%m-%d")
+        dates_to_check.add(m_date)
+    
+    # Add buffer (current and yesterday)
+    now_utc = datetime.utcnow()
+    dates_to_check.add(now_utc.strftime("%Y-%m-%d"))
+    dates_to_check.add((now_utc - timedelta(days=1)).strftime("%Y-%m-%d"))
+    
+    total_settled = 0
+    for d_str in sorted(list(dates_to_check)):
+        results = get_results_for_date(d_str)
+        if results:
+            settled = backtest_engine.settle_bets(results)
+            total_settled += settled
+            
+    if total_settled > 0:
+        print(f"[Settlement] Automatically settled {total_settled} bets.")
+
 def render_stats_banner(stats, bankroll=10000.0):
     roi = stats.get('roi', 0.0)
     profit_units = stats.get('net_profit', 0.0)
@@ -607,6 +640,8 @@ def main():
     if 'view_mode' not in st.session_state: st.session_state.view_mode = "cards"
     if 'filter_mode' not in st.session_state: st.session_state.filter_mode = "value"
     if 'is_deep_sync' not in st.session_state: st.session_state.is_deep_sync = False
+    if 'elo' not in st.session_state: st.session_state.elo = None
+    if 'backtest' not in st.session_state: st.session_state.backtest = None
 
     # ─── System Initialization & Auto-Sync (Unified Feedback) ───
     init_label = "⚙️ Deep System Reset In Progress..." if st.session_state.is_deep_sync else "⚙️ System Initializing..."
@@ -614,9 +649,17 @@ def main():
         if st.session_state.is_deep_sync:
             st.write("🗑️ **Reset:** Clearing all physical caches and re-warming Neural Engine...")
             st.session_state.is_deep_sync = False # Reset flag
+
+        # Step 0: Settle Pending Bets
+        st.write("🔍 **Step 0:** Settling Pending Bets (Syncing results)...")
+        elo_engine, backtest_engine = get_engines()
+        try:
+            settle_all_pending_bets(backtest_engine)
+        except Exception as e:
+            st.warning(f"Settlement Issue: {e}")
             
         st.write("🧠 **Step 1:** Warming up Neural Engine (6,000+ historical outcomes)...")
-        elo_engine, backtest_engine = get_engines()
+        # Engines already loaded above
         
         # Check if we need to pull fresh data
         if st.session_state.analyzed_results is None:

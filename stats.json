@@ -1,11 +1,11 @@
 {
-  "total_staked": 2.0,
+  "total_staked": 3.0,
   "total_return": 1.45,
-  "net_profit": -0.55,
-  "roi": -27.5,
-  "hit_rate": 50.0,
+  "net_profit": -1.55,
+  "roi": -51.67,
+  "hit_rate": 33.33,
   "wins": 1,
-  "losses": 1,
-  "total_bets": 2,
-  "last_sync": "2026-03-18 01:41:32"
+  "losses": 2,
+  "total_bets": 3,
+  "last_sync": "2026-03-19 00:35:41"
 }
