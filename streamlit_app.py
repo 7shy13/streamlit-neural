@@ -351,7 +351,9 @@ def clean_html(html):
 
 def format_time(unix):
     if not unix or unix == 0: return "TBD"
-    dt = datetime.datetime.fromtimestamp(unix)
+    from datetime import datetime, timedelta
+    # iddaa.com Unix timestamps are UTC. Add 3 hours for Turkey Time.
+    dt = datetime.utcfromtimestamp(unix) + timedelta(hours=3)
     return dt.strftime("%d/%m %H:%M")
 
 def render_stats_banner(stats, bankroll=10000.0):
