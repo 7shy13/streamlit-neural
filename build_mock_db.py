@@ -32,6 +32,8 @@ MARKET_VALUE_MAP = {
 
 # 1. Global Cache Loader
 LIVE_MV_CACHE = {}
+MV_RESOLVED_CACHE = {} # Perf Fix: Cache resolved names to avoid fuzzy matching 12,000 times
+
 try:
     cache_path = os.path.join(os.path.dirname(__file__), 'live_market_values.json')
     if os.path.exists(cache_path):
@@ -46,17 +48,29 @@ def get_base_mv(team_name, league=None):
     Returns the squad value in M Euros.
     Priority: 1. Live Scraped Cache, 2. Manual Map, 3. League Prior, 4. Global Min.
     """
+    # Perf Fix: Instant return if already resolved
+    if team_name in MV_RESOLVED_CACHE:
+        return MV_RESOLVED_CACHE[team_name]
+
     from naming_utils import FluidMatcher, normalize_turkish
+    
+    val = 15.0 # default
     
     # 1. Check Live Scraped Cache (Fluid Match)
     if LIVE_MV_CACHE:
         match = FluidMatcher.match(team_name, list(LIVE_MV_CACHE.keys()), cutoff=0.75)
         if match:
-            return float(LIVE_MV_CACHE[match])
+            val = float(LIVE_MV_CACHE[match])
+            MV_RESOLVED_CACHE[team_name] = val
+            return val
             
     # 2. Check Static Manual Map
     if team_name in MARKET_VALUE_MAP:
-        return MARKET_VALUE_MAP[team_name]
+        val = MARKET_VALUE_MAP[team_name]
+        MV_RESOLVED_CACHE[team_name] = val
+        return val
+    
+    # ... rest of the logic
     
     # 3. Check League Prior (Flexible Matching)
     if league:
