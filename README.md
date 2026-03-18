@@ -9,21 +9,19 @@ ANTIGRAVITY is a high-fidelity quantitative analyzer for football betting market
 - **Dynamic Dashboard**: Interactive Streamlit interface with real-time EV filtering.
 - **AI System Coupon**: Automated high-ROI 3/4 system coupon generation.
 
-## 🛠 Project Structure
-```text
-├── streamlit_app.py        # Main Dashboard (Interactive UI)
-├── dashboard.html          # Local/Legacy HTML Dashboard
-├── T1_ALL.csv              # Historical Match Database (6000+ entries)
-├── requirements.txt        # Project Dependencies
-├── placed_bets.json        # Local Bet Storage
-├── stats.json              # Real-time Performance Statistics
-└── src/                    # Core Analytical Logic
-    ├── base_elo_engine.py  # Dynamic ELO & Bayesian Priors
-    ├── pricing_engine.py   # Dixon-Coles Poisson Simulations
-    ├── iddaa_scraper.py    # Bulletin & Odds Scraping
-    ├── live_predictor.py   # CLI-based Prediction Bot
-    └── ...                 # Utilities (Scrapers, Naming, Impact)
-```
+## 📁 Project Structure
+
+Given the requirements for Streamlit Cloud deployment, the project follows a flattened structure for maximum module resolution stability:
+
+- `streamlit_app.py`          # Main Dashboard & Entry Point
+- `base_elo_engine.py`        # Core ELO logic & Anchors
+- `pricing_engine.py`         # Bivariate Poisson & AH Pricing
+- `iddaa_scraper.py`          # Live match & Injury data
+- `live_predictor.py`         # Real-time analysis pipeline
+- `git_sync.py`               # Automated GitHub synchronisation
+- `T1_ALL.csv`                # Historical match database (6000+ matches)
+- `player_data/`              # JSON storage for squad-level metrics
+- `requirements.txt`          # Project dependencies (inc. scipy)
 
 ## 🚀 Getting Started
 

@@ -19,9 +19,9 @@ def process_historical_brier():
     """
     print("Loading T1_ALL.csv...")
     try:
-        df = pd.read_csv("../T1_ALL.csv")
+        df = pd.read_csv("T1_ALL.csv")
     except FileNotFoundError:
-        print("Error: T1_ALL.csv not found in the parent directory.")
+        print("Error: T1_ALL.csv not found.")
         return
 
     # Basic cleaning

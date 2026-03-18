@@ -17,7 +17,7 @@ def warm_up_elo_engine():
     print("[SYSTEM] Warming up Dynamic Elo Engine with 6000 historical matches...")
     # Use absolute path resolution relative to the script's location
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(base_dir, '..', 'T1_ALL.csv')
+    csv_path = os.path.join(base_dir, 'T1_ALL.csv')
     
     try:
         df = pd.read_csv(csv_path)

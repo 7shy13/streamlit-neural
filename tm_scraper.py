@@ -119,12 +119,11 @@ def scrape_global_market_values():
             print(f"  [HATA] {country_name} taranırken sorun oluştu: {e}")
 
     # Save to local JSON Cache
-    output_path = 'src/live_market_values.json'
+    output_path = 'live_market_values.json'
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(all_market_values, f, ensure_ascii=False, indent=4)
-    
-    print(f"\n[BİTTİ] Toplam {len(all_market_values)} takımın bütçesi '{output_path}' dosyasına kaydedildi.")
+        json.dump(all_market_values, f, indent=2, ensure_ascii=False)
+    print(f"[MarketValue] Successfully saved {len(all_market_values)} values to {output_path}")
     return all_market_values
 
 if __name__ == "__main__":

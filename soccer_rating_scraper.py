@@ -28,11 +28,10 @@ def scrape_soccer_rating_elos():
     _scrape_page(national_url, headers, elo_map)
 
     if elo_map:
-        output_path = 'src/soccer_rating_data.json'
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_path = 'soccer_rating_data.json'
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(elo_map, f, indent=2, ensure_ascii=False)
-        print(f"[EloScraper] Successfully saved {len(elo_map)} ratings to {output_path}")
+            json.dump(rating_map, f, indent=2, ensure_ascii=False)
+        print(f"[EloScraper] Exported {len(rating_map)} teams to {output_path}")
 
     return elo_map
 

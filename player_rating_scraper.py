@@ -18,7 +18,7 @@ def scrape_team_player_ratings(team_name):
     # 1. First, find the team-specific URL from soccer_rating_data.json (which we already have)
     # We need to map team_name to the grounded name in soccer_rating_data.json
     try:
-        with open('src/soccer_rating_data.json', 'r', encoding='utf-8') as f:
+        with open('soccer_rating_data.json', 'r', encoding='utf-8') as f:
             anchors = json.load(f)
         
         matched_name = FluidMatcher.match(team_name, list(anchors.keys()))

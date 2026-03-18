@@ -36,7 +36,7 @@ def fetch_clubelo_rankings():
                     continue
         
         if elo_map:
-            output_path = 'src/clubelo_data.json'
+            output_path = 'clubelo_data.json'
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(elo_map, f, indent=2, ensure_ascii=False)
