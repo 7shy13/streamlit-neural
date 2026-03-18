@@ -23,6 +23,11 @@ from coupon_engine import build_system_coupon
 from naming_utils import get_canonical_name
 from git_sync import sync_to_github # Req: Automated Sync
 
+def get_turkey_time():
+    """Helper to ensure timestamps are in Turkey Time (UTC+3) regardless of server locale."""
+    from datetime import datetime, timedelta
+    return (datetime.utcnow() + timedelta(hours=3)).strftime("%H:%M:%S")
+
 # ─── Data & Analysis Pipeline (TTL: 15min) ──────────────────────────────────
 @st.cache_data(ttl=900, show_spinner=False)
 def get_full_analysis(_elo_engine):
@@ -608,17 +613,20 @@ def main():
 
     # AUTO-SYNC / PERSISTENCE LOGIC (Request: Hands-off updates)
     if st.session_state.analyzed_results is None:
-        try:
-            # This call is cached via @st.cache_data(ttl=900)
-            # It will only hit the network once every 15 minutes.
-            results, injuries, matches = get_full_analysis(elo_engine)
-            if results:
-                st.session_state.scraped_data = {"matches": matches, "injuries": injuries}
-                st.session_state.analyzed_results = results
-                st.session_state.last_sync = datetime.datetime.now().strftime("%H:%M:%S")
-                st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
-        except Exception as e:
-            st.sidebar.error(f"Auto-sync failed: {e}")
+        with st.status("📡 Fetching Live Market Data...", expanded=True) as status:
+            try:
+                st.write("Checking MBS1 Bulletin...")
+                results, injuries, matches = get_full_analysis(elo_engine)
+                if results:
+                    st.write("🧠 Neural Signatures Processed.")
+                    st.session_state.scraped_data = {"matches": matches, "injuries": injuries}
+                    st.session_state.analyzed_results = results
+                    st.session_state.last_sync = get_turkey_time()
+                    st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
+                    status.update(label=f"✅ Sync Complete ({st.session_state.last_sync})", state="complete")
+            except Exception as e:
+                 status.update(label="❌ Sync Failed", state="error")
+                 st.sidebar.error(f"Auto-sync failed: {e}")
 
     # 0. SIDEBAR - Maintenance & Sync
     with st.sidebar:
