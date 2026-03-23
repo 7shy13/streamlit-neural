@@ -387,6 +387,8 @@ def settle_all_pending_bets(backtest_engine):
             
     if total_settled > 0:
         print(f"[Settlement] Automatically settled {total_settled} bets.")
+        
+    return total_settled
 
 def render_stats_banner(stats, bankroll=10000.0):
     roi = stats.get('roi', 0.0)
@@ -651,8 +653,9 @@ def main():
         # Step 0: Settle Pending Bets
         st.write("🔍 **Step 0:** Settling Pending Bets (Syncing results)...")
         elo_engine, backtest_engine = get_engines()
+        total_settled = 0
         try:
-            settle_all_pending_bets(backtest_engine)
+            total_settled = settle_all_pending_bets(backtest_engine) or 0
         except Exception as e:
             st.warning(f"Settlement Issue: {e}")
             
@@ -672,19 +675,31 @@ def main():
                     st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
                     
                     # Auto-persist found values with exact Kelly Stake
+                    new_bets_added = 0
                     for res in results:
                         if res['has_value']:
                             for vb in res['value_bets']:
                                 if vb['is_value']:
                                     raw_kelly = (st.session_state.bankroll * 0.15 * (vb['ev'] / (vb['iddaa_odd'] - 1)))
                                     kelly_stake = min(raw_kelly, st.session_state.bankroll * 0.05)
-                                    backtest_engine.add_placed_bet({
+                                    added = backtest_engine.add_placed_bet({
                                         "home": res['home'], "away": res['away'], "outcome": vb['outcome'],
                                         "odd": vb['iddaa_odd'], "ev": vb['ev'], "stake": kelly_stake, 
                                         "match_time": res['match_time'], "league": res['league']
                                     })
+                                    if added:
+                                        new_bets_added += 1
                                     
                     status.update(label=f"✅ System Ready (Sync: {st.session_state.last_sync})", state="complete")
+                    
+                    # Prevent Ephemeral Data Loss: Auto-Save to GitHub
+                    if total_settled > 0 or new_bets_added > 0:
+                        st.sidebar.info(f"🔄 Auto-Saving {new_bets_added} new bets and {total_settled} settlements...")
+                        success, msg = sync_to_github("Auto-Save: Persisting bets and settlements")
+                        if not success:
+                            st.sidebar.warning(f"⚠️ Cloud Save Failed: {msg}. Configure Git Remote with a Token if hosting on Streamlit Cloud.")
+                        else:
+                            st.sidebar.success("✅ State successfully synchronized to GitHub.")
             except Exception as e:
                  st.write(f"❌ **Error:** {e}")
                  status.update(label="⚠️ Sync Partial Failure", state="error")
