@@ -49,6 +49,7 @@ class BacktestEngine:
             "outcome": bet_data['outcome'],
             "odd": float(bet_data['odd']),
             "ev": float(bet_data['ev']),
+            "stake": float(bet_data.get('stake', 1.0)),
             "match_time": bet_data['match_time'],
             "league": bet_data['league'],
             "status": "PENDING",
@@ -88,13 +89,14 @@ class BacktestEngine:
                 actual = "MS 1" if sh > sa else ("MS 2" if sa > sh else "MS X")
                 
                 is_win = (bet['outcome'] == actual)
+                stake = float(bet.get('stake', 1.0))
                 bet['status'] = "SETTLED"
                 bet['result'] = f"{sh}-{sa}"
-                bet['pnl'] = (bet['odd'] - 1.0) if is_win else -1.0
+                bet['pnl'] = stake * (bet['odd'] - 1.0) if is_win else -stake
                 
                 # Update Stats
-                self.stats['total_staked'] += 1.0
-                self.stats['total_return'] += (bet['odd'] if is_win else 0.0)
+                self.stats['total_staked'] += stake
+                self.stats['total_return'] += (stake * bet['odd'] if is_win else 0.0)
                 if is_win: self.stats['wins'] += 1
                 else: self.stats['losses'] += 1
                 

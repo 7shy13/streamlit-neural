@@ -366,18 +366,17 @@ def settle_all_pending_bets(backtest_engine):
     if not pending_bets:
         return
     
-    # Get unique dates (YYYY-MM-DD) for all pending bets
-    # Also include Today and Yesterday to be safe
     dates_to_check = set()
+    now_utc = datetime.utcnow()
+    
+    # 1. Add the exact match dates of all pending bets
     for bet in pending_bets:
-        # match_time is unix
         m_date = datetime.utcfromtimestamp(bet['match_time']).strftime("%Y-%m-%d")
         dates_to_check.add(m_date)
     
-    # Add buffer (current and yesterday)
-    now_utc = datetime.utcnow()
-    dates_to_check.add(now_utc.strftime("%Y-%m-%d"))
-    dates_to_check.add((now_utc - timedelta(days=1)).strftime("%Y-%m-%d"))
+    # 2. Enforce a 10-day continuous lookback unconditionally
+    for i in range(11):
+        dates_to_check.add((now_utc - timedelta(days=i)).strftime("%Y-%m-%d"))
     
     total_settled = 0
     for d_str in sorted(list(dates_to_check)):
@@ -391,9 +390,8 @@ def settle_all_pending_bets(backtest_engine):
 
 def render_stats_banner(stats, bankroll=10000.0):
     roi = stats.get('roi', 0.0)
-    profit_units = stats.get('net_profit', 0.0)
-    # Convert units to TL: 1u = bankroll × kelly_fraction (~5%)
-    profit_tl = round(profit_units * bankroll * 0.05, 0)
+    # Stats now reflect actual Kelly stakes in TL from the new backtest engine update
+    profit_tl = round(stats.get('net_profit', 0.0), 0)
     hit_rate = stats.get('hit_rate', 0)
     total = stats.get('total_bets', 0)
     
@@ -672,6 +670,20 @@ def main():
                     st.session_state.analyzed_results = results
                     st.session_state.last_sync = get_turkey_time()
                     st.session_state.coupon = build_system_coupon(results, bankroll=st.session_state.bankroll)
+                    
+                    # Auto-persist found values with exact Kelly Stake
+                    for res in results:
+                        if res['has_value']:
+                            for vb in res['value_bets']:
+                                if vb['is_value']:
+                                    raw_kelly = (st.session_state.bankroll * 0.15 * (vb['ev'] / (vb['iddaa_odd'] - 1)))
+                                    kelly_stake = min(raw_kelly, st.session_state.bankroll * 0.05)
+                                    backtest_engine.add_placed_bet({
+                                        "home": res['home'], "away": res['away'], "outcome": vb['outcome'],
+                                        "odd": vb['iddaa_odd'], "ev": vb['ev'], "stake": kelly_stake, 
+                                        "match_time": res['match_time'], "league": res['league']
+                                    })
+                                    
                     status.update(label=f"✅ System Ready (Sync: {st.session_state.last_sync})", state="complete")
             except Exception as e:
                  st.write(f"❌ **Error:** {e}")
@@ -788,9 +800,12 @@ def main():
                             if res['has_value']:
                                 for vb in res['value_bets']:
                                     if vb['is_value']:
+                                        raw_kelly = (st.session_state.bankroll * 0.15 * (vb['ev'] / (vb['iddaa_odd'] - 1)))
+                                        kelly_stake = min(raw_kelly, st.session_state.bankroll * 0.05)
                                         backtest_engine.add_placed_bet({
                                             "home": res['home'], "away": res['away'], "outcome": vb['outcome'],
-                                            "odd": vb['iddaa_odd'], "ev": vb['ev'], "match_time": res['match_time'], "league": res['league']
+                                            "odd": vb['iddaa_odd'], "ev": vb['ev'], "stake": kelly_stake,
+                                            "match_time": res['match_time'], "league": res['league']
                                         })
                         st.success("Neural Analysis Complete!")
                         st.balloons()

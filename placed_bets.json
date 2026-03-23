@@ -36,9 +36,9 @@
     "ev": 0.3272,
     "match_time": 1773942300,
     "league": "IDDAA",
-    "status": "PENDING",
-    "result": null,
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "result": "1-2",
+    "pnl": -1.0,
     "timestamp": "2026-03-18T03:16:28.866384"
   },
   {
@@ -120,9 +120,9 @@
     "ev": 0.4492,
     "match_time": 1773864000,
     "league": "IDDAA",
-    "status": "PENDING",
-    "result": null,
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "result": "4-0",
+    "pnl": -1.0,
     "timestamp": "2026-03-18T03:18:09.372207"
   },
   {
@@ -134,9 +134,9 @@
     "ev": 0.479,
     "match_time": 1773864000,
     "league": "IDDAA",
-    "status": "PENDING",
-    "result": null,
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "result": "4-1",
+    "pnl": -1.0,
     "timestamp": "2026-03-18T03:18:09.372207"
   },
   {
